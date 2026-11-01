@@ -1,4 +1,4 @@
-"""Capture review-branch Streamlit screens from the bundled official snapshot."""
+"""Capture Streamlit screenshots from the bundled official snapshot."""
 from __future__ import annotations
 
 import csv
