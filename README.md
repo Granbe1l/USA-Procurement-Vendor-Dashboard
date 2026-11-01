@@ -2,7 +2,7 @@
 
 Dashboard untuk menganalisis distribusi nilai kontrak pemerintah Amerika Serikat pada **National Science Foundation (NSF)** dan **Nuclear Regulatory Commission (NRC)** selama tahun fiskal **2024–2025**. Metode yang digunakan adalah **ABC/Pareto**, **Herfindahl–Hirschman Index (HHI)** dan perbandingan antartahun.
 
-**[Lihat dashboard](https://usa-federal-procurement-vendor-dashboard-candy.streamlit.app/)** · [Sumber data](docs/SOURCES.md) · [Metodologi](docs/METHODOLOGY.md)
+**[Lihat dashboard](https://usa-procurement-vendor-dashboard-candy.streamlit.app/)** · [Sumber data](docs/SOURCES.md) · [Metodologi](docs/METHODOLOGY.md)
 
 **Teknologi:** Python, pandas, DuckDB SQL, Streamlit, Plotly.
 
