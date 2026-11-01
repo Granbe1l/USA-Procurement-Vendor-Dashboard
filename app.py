@@ -62,6 +62,9 @@ h1, h2, h3, p, label {font-family: Inter, -apple-system, BlinkMacSystemFont, 'Se
 .mobile-record-value {color:#F3F6FC; text-align:right; overflow-wrap:anywhere; font-variant-numeric:tabular-nums;}
 .mobile-more {border:1px solid #293A51; border-radius:10px; padding:.7rem; margin:.5rem 0; color:#D5A84B;}
 .mobile-record-count {color:#AFC0D5; font-size:.78rem; margin:.5rem 0;}
+.mobile-compact-row {padding:.55rem .75rem; border:1px solid #293A51; border-radius:10px; margin:.4rem 0; background:#142239;}
+.mobile-compact-row .mobile-record-title {margin-bottom:.25rem;}
+.mobile-compact-row .mobile-record-field {padding:.24rem 0;}
 @media(max-width: 700px) {
 .block-container {padding: 3.6rem 1rem 2rem;}
 [data-testid="stMain"] h1 {font-size: 1.65rem;}
@@ -69,6 +72,7 @@ h1, h2, h3, p, label {font-family: Inter, -apple-system, BlinkMacSystemFont, 'Se
 .mobile-data-view {display:block;}
 [class*="st-key-desktop_table_"] {display:none;}
 }
+@media(min-width: 701px) {[class*="st-key-mobile_table_"] {display:none;}}
 </style>""", unsafe_allow_html=True)
 
 
@@ -261,40 +265,66 @@ TABLE_SEQUENCE = 0
 
 
 def table(data: pd.DataFrame, columns=None) -> None:
-    """Keep a full desktop table and show readable field/value cards on phones."""
+    """Desktop table plus a compact, paginated mobile view with optional details."""
     global TABLE_SEQUENCE
     TABLE_SEQUENCE += 1
+    table_id = TABLE_SEQUENCE
     shown = display_frame(data, columns)
-    with st.container(key=f"desktop_table_{TABLE_SEQUENCE}"):
+    with st.container(key=f"desktop_table_{table_id}"):
         st.dataframe(shown, hide_index=True, width="stretch", column_config={
             label: st.column_config.TextColumn(label, width="large") for label in shown.columns})
 
-    if shown.empty:
-        st.markdown('<div class="mobile-data-view mobile-record-count">No rows for these filters.</div>',
-                    unsafe_allow_html=True)
-        return
+    with st.container(key=f"mobile_table_{table_id}"):
+        if shown.empty:
+            st.caption("No rows for these filters.")
+            return
 
-    # Avoid rendering hundreds of cards on a phone; keep the complete table on desktop.
-    preview = shown.head(12)
-    cards = []
-    for _, row in preview.iterrows():
-        # "Scope" repeats in comparison results and is not a useful card heading.
-        heading_col = next((col for col in ("Vendor", "Agency", "Shared normalized name",
-                                            "Recipient UEI", "Fiscal year", "ABC class")
-                            if col in shown.columns and str(row[col]) != "—"), shown.columns[0])
-        heading = html.escape(str(row[heading_col]))
-        fields = "".join(
-            '<div class="mobile-record-field"><span class="mobile-record-label">' +
-            html.escape(str(col)) + '</span><span class="mobile-record-value">' +
-            html.escape(str(value)) + '</span></div>'
-            for col, value in row.items() if col != heading_col
-        )
-        cards.append(f'<article class="mobile-record"><div class="mobile-record-title">{heading}</div>{fields}</article>')
-    more = (f'<div class="mobile-record-count">Showing 12 of {len(shown):,} rows. '
-            'Use a desktop screen to browse the complete table.</div>'
-            if len(shown) > 12 else '')
-    st.markdown('<div class="mobile-data-view">' + "".join(cards) + more + '</div>',
-                unsafe_allow_html=True)
+        # Use distinct, informative fields for the small-screen summary.
+        priority = ("Vendor", "Agency", "Shared normalized name", "Recipient UEI",
+                    "Fiscal year", "ABC class", "Net obligations (USD)",
+                    "Current net (USD)", "Change (USD)", "HHI (0–10,000)")
+        summary_cols = [col for col in priority if col in shown.columns][:3]
+        if not summary_cols:
+            summary_cols = list(shown.columns[:3])
+        # Repeated Scope alone conveys little, so do not prioritize it.
+        page_size = 5
+        page_count = (len(shown) + page_size - 1) // page_size
+        if page_count > 1:
+            page_number = st.selectbox("Page", list(range(1, page_count + 1)),
+                                       key=f"mobile_page_{table_id}",
+                                       format_func=lambda n: f"{n} / {page_count}")
+        else:
+            page_number = 1
+        offset = (page_number - 1) * page_size
+        visible = shown.iloc[offset:offset + page_size]
+        rows = []
+        for index, (_, record) in enumerate(visible.iterrows(), start=offset + 1):
+            summary = "".join(
+                '<div class="mobile-record-field"><span class="mobile-record-label">' +
+                html.escape(str(col)) + '</span><span class="mobile-record-value">' +
+                html.escape(str(record[col])) + '</span></div>'
+                for col in summary_cols
+            )
+            rows.append('<div class="mobile-compact-row"><div class="mobile-record-title">#' +
+                        str(index) + '</div>' + summary + '</div>')
+        st.markdown('<div class="mobile-data-view">' + "".join(rows) + '</div>',
+                    unsafe_allow_html=True)
+        st.caption(f"Rows {offset + 1}–{offset + len(visible)} of {len(shown):,}")
+        choice = st.selectbox("View row details", ["None"] + list(range(offset, offset + len(visible))),
+                              key=f"mobile_detail_{table_id}",
+                              format_func=lambda n: "Choose a row" if n == "None"
+                              else f"#{n + 1} · " + " · ".join(
+                                  str(shown.iloc[n][col]) for col in summary_cols[:2]))
+        if choice != "None":
+            record = shown.iloc[choice]
+            details = "".join(
+                '<div class="mobile-record-field"><span class="mobile-record-label">' +
+                html.escape(str(col)) + '</span><span class="mobile-record-value">' +
+                html.escape(str(value)) + '</span></div>'
+                for col, value in record.items()
+            )
+            st.markdown('<div class="mobile-data-view mobile-record">' + details + '</div>',
+                        unsafe_allow_html=True)
 
 
 def mobile_comparison_cards(data: pd.DataFrame, kind: str) -> None:
@@ -678,12 +708,12 @@ elif page == "Fiscal-Year Comparison":
         st.subheader("Annual signed obligations")
         with st.container(key="annual-comparison-table"):
             table(annual)
-            mobile_comparison_cards(annual, "annual")
+
         st.subheader("Top-10 recipient rank changes")
         ranks = sql_result("06_vendor_rank_changes.sql")
         with st.container(key="rank-comparison-table"):
             table(ranks)
-            mobile_comparison_cards(ranks, "ranks")
+
         st.caption("Positive rank improvement means moving up. A missing rank means no selected transaction in that year. Top 10 uses signed recipient nets, with UEI breaking ties.")
     else:
         empty_chart("No fiscal-year comparison available")
