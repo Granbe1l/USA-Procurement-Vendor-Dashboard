@@ -289,11 +289,10 @@ def table(data: pd.DataFrame, columns=None) -> None:
         # Repeated Scope alone conveys little, so do not prioritize it.
         page_size = 5
         page_count = (len(shown) + page_size - 1) // page_size
-        # Keep the pagination widget mounted even for single-page results.
-        # Otherwise changing SQL queries can remove a keyed widget between
-        # Streamlit test reruns and leave a stale widget state reference.
+        # Scope widget keys to their changing option sets so Streamlit does not
+        # reuse stale widget state when the SQL result size changes.
         page_number = st.selectbox("Page", list(range(1, page_count + 1)),
-                                   key=f"mobile_page_{table_id}",
+                                   key=f"mobile_page_{table_id}_{page_count}",
                                    format_func=lambda n: f"{n} / {page_count}",
                                    disabled=page_count == 1)
         offset = (page_number - 1) * page_size
@@ -312,7 +311,7 @@ def table(data: pd.DataFrame, columns=None) -> None:
                     unsafe_allow_html=True)
         st.caption(f"Rows {offset + 1}–{offset + len(visible)} of {len(shown):,}")
         choice = st.selectbox("View row details", ["None"] + list(range(offset, offset + len(visible))),
-                              key=f"mobile_detail_{table_id}",
+                              key=f"mobile_detail_{table_id}_{offset}_{len(visible)}",
                               format_func=lambda n: "Choose a row" if n == "None"
                               else f"#{n + 1} · " + " · ".join(
                                   str(shown.iloc[n][col]) for col in summary_cols[:2]))
