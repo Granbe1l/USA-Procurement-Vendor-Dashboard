@@ -249,6 +249,54 @@ def table(data: pd.DataFrame, columns=None) -> None:
         label: st.column_config.TextColumn(label, width="large") for label in shown.columns})
 
 
+def mobile_comparison_cards(data: pd.DataFrame, kind: str) -> None:
+    """Show compact records on phones and retain the full table on wider screens."""
+    from html import escape
+
+    shown = display_frame(data)
+    st.markdown("""
+    <style>
+    .mobile-comparison-cards { display: none; }
+    @media (max-width: 640px) {
+      .st-key-annual-comparison-table [data-testid="stDataFrame"],
+      .st-key-rank-comparison-table [data-testid="stDataFrame"] { display: none; }
+      .mobile-comparison-cards { display: grid; gap: 12px; margin: 6px 0 18px; }
+      .mobile-comparison-card { padding: 14px; border: 1px solid rgba(140,150,170,.28);
+        border-radius: 12px; background: rgba(120,135,160,.07); overflow-wrap: anywhere; }
+      .mobile-comparison-card h4 { font-size: 15px; margin: 0 0 10px; }
+      .mobile-comparison-card dl { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.2fr);
+        gap: 7px 12px; margin: 0; font-size: 13px; }
+      .mobile-comparison-card dt { color: #aab4c6; }
+      .mobile-comparison-card dd { margin: 0; text-align: right; font-weight: 600; }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    if data.empty:
+        st.info("No records for the selected filters.")
+        return
+    if kind == "annual":
+        fields = ["Net obligations (USD)", "Change (USD)", "Change (%)",
+                  "New recipients", "Dropped recipients"]
+    else:
+        fields = ["Recipient UEI", "Previous rank", "Current rank",
+                  "Rank improvement", "Previous net (USD)", "Current net (USD)"]
+    cards = []
+    for _, row in shown.iterrows():
+        scope = row.get("Scope", "—")
+        agency = row.get("Agency", "—")
+        agency = "All agencies" if agency == "—" else agency
+        year = row.get("Fiscal year", "—")
+        heading = f"{agency} · FY{year}" if kind == "annual" else f"{agency} · FY{year}"
+        details = "".join(
+            f"<dt>{escape(label)}</dt><dd>{escape(str(row[label]))}</dd>"
+            for label in fields if label in shown.columns
+        )
+        cards.append(f'<article class="mobile-comparison-card"><h4>{escape(heading)}</h4>'
+                     f'<dl><dt>Scope</dt><dd>{escape(str(scope))}</dd>{details}</dl></article>')
+    st.markdown('<div class="mobile-comparison-cards">' + "".join(cards) + '</div>',
+                unsafe_allow_html=True)
+
+
 def render_kpis() -> None:
     awards_available = loaded and kpi.get("total_awards") is not None
     cards = [
@@ -580,10 +628,14 @@ elif page == "Fiscal-Year Comparison":
         fig.update_layout(legend={"orientation": "h", "y": -.25})
         plot(chart_style(fig, 370))
         st.subheader("Annual signed obligations")
-        table(annual)
+        with st.container(key="annual-comparison-table"):
+            table(annual)
+            mobile_comparison_cards(annual, "annual")
         st.subheader("Top-10 recipient rank changes")
         ranks = sql_result("06_vendor_rank_changes.sql")
-        table(ranks)
+        with st.container(key="rank-comparison-table"):
+            table(ranks)
+            mobile_comparison_cards(ranks, "ranks")
         st.caption("Positive rank improvement means moving up. A missing rank means no selected transaction in that year. Top 10 uses signed recipient nets, with UEI breaking ties.")
     else:
         empty_chart("No fiscal-year comparison available")
