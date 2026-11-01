@@ -104,13 +104,3 @@ The SQL files in `sql/` add in-memory DuckDB analysis without replacing the pand
 Annual changes in `06_fy_comparison.sql` use signed obligations. Relative change is undefined for a zero prior total. New/dropped recipients measure UEI presence, including nonpositive nets, not verified supplier churn. `06_vendor_rank_changes.sql` compares signed-net ranks in either year's top 10, with UEI breaking ties. Whitespace/case-normalized name overlap (`07`) is reported separately and never merges the calculation population.
 
 `src/presentation.py` formats copies only. Currency is converted from cents once where required, fractions become percentages, and undefined values display an em dash. Machine-friendly exports retain their names, numeric values and missingness. The Pareto logarithmic option changes only the bar scale; the denominator, reference lines and classes remain the same.
-
-## Design choices to discuss
-
-The rules above are implemented facts. These are open questions for the project author to discuss rather than claims of personal experience.
-
-- **Threshold rationale:** Why use 80% and 95% here? What alternative would I compare? What does this choice help a reader see?
-- **Signed adjustments:** Why keep negative values? What would absolute values distort? How would I investigate an unexpected deobligation?
-- **Ties and boundaries:** Why keep tied values together? What happens when a group crosses 80%? How would I explain a Category A share above 80%?
-- **Agency selection:** Why NSF and NRC? What comparison is useful despite different missions? What scope would I choose next?
-- **DuckDB selection:** Why use an in-memory analytical engine here? What does the SQL layer demonstrate beyond pandas? When would another storage/query design be preferable?
