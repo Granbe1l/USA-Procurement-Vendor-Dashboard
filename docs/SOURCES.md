@@ -53,7 +53,4 @@ The dashboard shows the actual retrieval time and counts from the snapshot it lo
 
 Raw files remain unchanged by cleaning and are ignored by Git. For exact reproduction, keep the raw archive, extracted CSV, metadata, prepared data, and matching code revision together. The dashboard's source-download checks are provenance checks, rather than a separate audit of government reporting accuracy.
 
-The `fix/official-data` review branch includes a verified official snapshot captured on 2026-11-01 UTC: 5,020 source transactions, 5,020 retained transactions, and zero quarantined rows. See `data/processed/metadata.json` and `data/processed/quality.json` for recorded counts and SHA-256 checksums. The production `main` branch is not yet updated. Automated tests also use temporary fixtures, which are not presented as source-derived findings; the [validation record](validation.md) separates tests from live-source verification.
-
-
-The current preparation pipeline records both `parquet_sha256` and `processed_sha256`. A first-run automatic download is now opt-in; explicit refresh preserves the same official-source count/checksum checks. The review branch includes the actual verified capture in processed form; production deployment requires review and merge. No competition or NAICS values are inferred from the current projected schema.
+The verified official snapshot is included in the current repository under `data/processed/`. It contains 5,020 transactions, with zero quarantined rows, captured on 2026-11-01 UTC. Metadata and quality reports document the counts and checksums. Automated tests use separate temporary fixtures.
