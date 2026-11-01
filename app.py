@@ -249,12 +249,6 @@ def table(data: pd.DataFrame, columns=None) -> None:
         label: st.column_config.TextColumn(label, width="large") for label in shown.columns})
 
 
-def sql_details(name: str) -> None:
-    with st.expander("SQL behind this chart · " + name):
-        st.code(sql_text(name), language="sql")
-        st.caption("Dependencies and standalone execution: sql/README.md in the repository.")
-
-
 def render_kpis() -> None:
     awards_available = loaded and kpi.get("total_awards") is not None
     cards = [
@@ -403,7 +397,7 @@ def show_findings() -> None:
 
 
 def render_source_panel(*, expanded: bool = False) -> None:
-    repository = "https://github.com/Granbe1l/USA-Federal-Procurement-Vendor-Dashboard"
+    repository = "https://github.com/Granbe1l/USA-Procurement-Vendor-Dashboard"
     with st.expander("Source & calculations", expanded=expanded):
         source_col, audit_col = st.columns([1.3, 1])
         with source_col:
@@ -514,8 +508,6 @@ if page == "Overview":
         st.caption("HHI = 10,000 × sum of squared positive-net recipient shares. Higher means more concentrated value.")
     with st.expander("How to interpret concentration"):
         st.write("Compare shares rather than agency budgets. HHI and ABC do not measure performance or prove supply risk. Inspect recipients and award adjustments before deciding follow-up. UEIs are not consolidated into corporate parents; two fiscal years support a comparison, not a trend.")
-    if has_rows:
-        sql_details("04_concentration_hhi.sql")
     left, right = st.columns([2, 1])
     with left, st.container(border=True):
         chart_heading("ABC Pareto Analysis", "Vendor-level net obligations · category-colored bars and cumulative share")
@@ -593,8 +585,6 @@ elif page == "Fiscal-Year Comparison":
         ranks = sql_result("06_vendor_rank_changes.sql")
         table(ranks)
         st.caption("Positive rank improvement means moving up. A missing rank means no selected transaction in that year. Top 10 uses signed recipient nets, with UEI breaking ties.")
-        sql_details("06_fy_comparison.sql")
-        sql_details("06_vendor_rank_changes.sql")
     else:
         empty_chart("No fiscal-year comparison available")
 
@@ -614,7 +604,6 @@ elif page == "Concentration & SQL":
         if chosen == "07_vendor_name_overlap.sql":
             st.caption("Whitespace/case-normalized names are only an approximation. Different UEIs remain separate; this is not corporate-parent consolidation.")
         st.caption("Competition is unavailable: no competition field is retained in the current snapshot schema.")
-        sql_details(chosen)
     else:
         st.info("Load a prepared snapshot to run the SQL analyses.")
 
@@ -633,7 +622,7 @@ if not loaded:
         st.session_state.pop(status_key, None)
         st.session_state[request_key] = True
         st.rerun()
-    st.markdown("See the [source setup guide](https://github.com/Granbe1l/USA-Federal-Procurement-Vendor-Dashboard/blob/main/README.md) for local setup and source access details.")
+    st.markdown("See the [source setup guide](https://github.com/Granbe1l/USA-Procurement-Vendor-Dashboard/blob/main/README.md) for local setup and source access details.")
 elif not has_rows:
     st.info("No transactions match these filters. Clear or change the sidebar selections to restore the analysis.")
 
