@@ -1,0 +1,123 @@
+name: Verify official USAspending data
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Count-only checks first, or full verified download"
+        required: true
+        type: choice
+        options:
+          - verify-only
+          - download-and-prepare
+        default: verify-only
+
+permissions:
+  contents: write
+
+jobs:
+  official-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.txt pyarrow
+      - name: Verify source transaction count
+        run: python scripts/fetch_data.py --verify-only
+      - name: Fetch complete official transactions
+        if: ${{ github.event_name == 'pull_request' || inputs.mode == 'download-and-prepare' }}
+        run: python scripts/fetch_data.py --output-dir data/raw --timeout 1200
+      - name: Prepare verified snapshot
+        if: ${{ github.event_name == 'pull_request' || inputs.mode == 'download-and-prepare' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          captures = list(Path("data/raw").glob("*/metadata.json"))
+          complete = [p for p in captures if json.loads(p.read_text()).get("status") == "complete"]
+          if len(complete) != 1:
+              raise SystemExit(f"Expected one verified complete capture, found {len(complete)}")
+          metadata_path = complete[0]
+          metadata = json.loads(metadata_path.read_text())
+          raw_path = metadata_path.parent / metadata["raw_file"]
+          subprocess.run([
+              sys.executable, "scripts/prepare_data.py",
+              "--raw", str(raw_path), "--metadata", str(metadata_path),
+              "--output-dir", "data/processed",
+          ], check=True)
+          PY
+      - name: Audit official ABC, HHI and fiscal-year SQL findings
+        if: ${{ github.event_name == 'pull_request' || inputs.mode == 'download-and-prepare' }}
+        run: |
+          python scripts/report_findings.py --data-dir data/processed | tee data/processed/findings.md
+      - name: Smoke-test all Streamlit pages with official snapshot
+        if: ${{ github.event_name == 'pull_request' || inputs.mode == 'download-and-prepare' }}
+        run: |
+          python - <<'PY'
+          from streamlit.testing.v1 import AppTest
+          from pathlib import Path
+          assert Path("data/processed/transactions.parquet").is_file()
+          pages = ["Overview", "ABC Classification", "Vendor Analysis", "Fiscal-Year Comparison", "Concentration & SQL"]
+          for page in pages:
+              app = AppTest.from_file("app.py", default_timeout=90).run()
+              if page != "Overview":
+                  app.sidebar.radio[0].set_value(page).run()
+              if app.exception:
+                  raise AssertionError(f"{page}: {app.exception}")
+              print(f"Official snapshot UI smoke test passed: {page}")
+          PY
+      - name: Publish first verified snapshot to review branch
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git cat-file -e "HEAD:data/processed/metadata.json" 2>/dev/null; then
+            echo "A reviewed snapshot is already committed; do not silently replace it."
+            exit 0
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          meta = json.loads(Path("data/processed/metadata.json").read_text())
+          if meta.get("source_verification") != "official_api_download_count_checked" or meta.get("status") != "complete":
+              raise SystemExit("Refusing to publish an unverified snapshot")
+          PY
+          git config user.name "Candy"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/processed/transactions.parquet data/processed/transactions.csv.gz data/processed/metadata.json data/processed/quality.json data/processed/summary.json data/processed/findings.md
+          git commit -m "Add verified official USAspending snapshot for dashboard review"
+          # Rebase on the current review branch; never force-push or overwrite changes.
+          for attempt in 1 2 3; do
+            git fetch origin "${{ github.event.pull_request.head.ref }}"
+            git rebase FETCH_HEAD
+            if git push origin "HEAD:${{ github.event.pull_request.head.ref }}"; then
+              exit 0
+            fi
+            echo "Concurrent branch update; retrying after fetching latest head."
+          done
+          echo "Unable to publish verified snapshot without overwriting concurrent changes."
+          exit 1
+      - name: Upload verified processed dataset
+        if: ${{ github.event_name == 'pull_request' || inputs.mode == 'download-and-prepare' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: official-usaspending-processed
+          path: |
+            data/processed/transactions.parquet
+            data/processed/transactions.csv.gz
+            data/processed/metadata.json
+            data/processed/quality.json
+            data/processed/summary.json
+            data/processed/findings.md
+          if-no-files-found: error
+          retention-days: 90

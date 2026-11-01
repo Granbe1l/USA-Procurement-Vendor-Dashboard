@@ -1,0 +1,72 @@
+{
+  "initial_rows": 5020,
+  "column_mapping": {
+    "transaction_id": "contract_transaction_unique_key",
+    "vendor_id": "recipient_uei",
+    "vendor_name": "recipient_name",
+    "award_id": "contract_award_unique_key",
+    "action_date": "action_date",
+    "agency": "awarding_agency_name",
+    "state": "recipient_state_code",
+    "award_type": "award_type",
+    "obligation": "federal_action_obligation"
+  },
+  "missing_optional_columns": [
+    "fiscal_year"
+  ],
+  "missing_values": {
+    "transaction_id": 0,
+    "vendor_id": 0,
+    "vendor_name": 0,
+    "award_id": 0,
+    "action_date": 0,
+    "agency": 0,
+    "state": 21,
+    "award_type": 0,
+    "obligation": 0,
+    "fiscal_year": 5020
+  },
+  "observed_award_types": {
+    "DELIVERY ORDER": 2581,
+    "DEFINITIVE CONTRACT": 1159,
+    "BPA CALL": 653,
+    "PURCHASE ORDER": 627
+  },
+  "observed_agencies": {
+    "Nuclear Regulatory Commission": 3012,
+    "National Science Foundation": 2008
+  },
+  "duplicate_policy": "Salinan identik dibuang; semua salinan transaction_id yang berbeda dikarantina.",
+  "amount_policy": "USD diproses sebagai integer sen; nilai negatif dan nol dipertahankan. Presisi di bawah sen ditolak.",
+  "vendor_policy": "UEI/vendor_id adalah identitas, bukan nama. ID kosong tetap dalam total kewajiban, dikecualikan dari metrik vendor dan ABC.",
+  "abc_policy": "Hanya net vendor positif; kelas memakai kumulatif sebelum kelompok nilai seri: <80% A, <95% B, selainnya C.",
+  "duplicate_transaction_rows": 0,
+  "identical_duplicate_rows_removed": 0,
+  "conflicting_transaction_ids": 0,
+  "agency_labels_normalized": 0,
+  "quarantine_reasons": {
+    "missing_transaction_id": 0,
+    "conflicting_transaction_id": 0,
+    "invalid_obligation": 0,
+    "invalid_action_date": 0,
+    "out_of_fiscal_year_scope": 0,
+    "agency_out_of_scope": 0,
+    "noncontract_or_unknown_award_type": 0,
+    "inconsistent_fiscal_year": 0
+  },
+  "quarantined_rows": 0,
+  "retained_rows": 5020,
+  "unique_transaction_ids": 5020,
+  "missing_vendor_rows": 0,
+  "missing_vendor_name_rows_labeled": 0,
+  "missing_award_id_rows": 0,
+  "negative_obligation_rows": 632,
+  "zero_obligation_rows": 1214,
+  "net_obligation_cents": 186303146994,
+  "row_reconciliation": {
+    "raw": 5020,
+    "exact_duplicates_removed": 0,
+    "quarantined": 0,
+    "retained": 5020
+  }
+}

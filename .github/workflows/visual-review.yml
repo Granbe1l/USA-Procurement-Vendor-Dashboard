@@ -1,0 +1,53 @@
+name: Review-branch visual screenshots
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements.txt playwright
+      - run: python -m playwright install --with-deps chromium
+      - name: Confirm official snapshot
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          meta = json.loads(Path('data/processed/metadata.json').read_text())
+          assert meta.get('status') == 'complete'
+          assert meta.get('source_verification') == 'official_api_download_count_checked'
+          assert Path('data/processed/transactions.parquet').exists()
+          PY
+      - name: Start Streamlit
+        run: |
+          python -m streamlit run app.py --server.headless true --server.port 8501 --server.address 127.0.0.1 > /tmp/streamlit.log 2>&1 &
+          for i in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:8501/_stcore/health >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/streamlit.log
+          exit 1
+      - name: Capture desktop and mobile views
+        run: python scripts/capture_review_screenshots.py
+      - name: Upload screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: official-snapshot-visual-review
+          path: artifacts/review-screenshots/
+          if-no-files-found: warn
+          retention-days: 30
+

@@ -1,0 +1,52 @@
+{
+  "count_endpoint": "https://api.usaspending.gov/api/v2/search/spending_by_transaction_count/",
+  "download_endpoint": "https://api.usaspending.gov/api/v2/download/transactions/",
+  "query": {
+    "file_format": "csv",
+    "filters": {
+      "agencies": [
+        {
+          "name": "National Science Foundation",
+          "tier": "toptier",
+          "type": "awarding"
+        },
+        {
+          "name": "Nuclear Regulatory Commission",
+          "tier": "toptier",
+          "type": "awarding"
+        }
+      ],
+      "award_type_codes": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "time_period": [
+        {
+          "end_date": "2025-09-30",
+          "start_date": "2023-10-01"
+        }
+      ]
+    }
+  },
+  "raw_file": "Contracts_PrimeTransactions_2026-10-31_H14M25S29_1.csv",
+  "raw_row_count": 5020,
+  "raw_sha256": "47f8f5d29bbabe6b37cb158838c6ea204a8f9fb3e90225dc05f14c2c1ee0bf5c",
+  "retrieval_finished_at": "2026-11-01T00:19:56+00:00",
+  "retrieval_started_at": "2026-11-01T00:19:43+00:00",
+  "revision_limitation": "USAspending data can be revised. Counts before and after download and CSV row counts are checked, but this is not an immutable historical snapshot and is not verified as the unavailable original 5,020-row ZIP.",
+  "row_count": 5020,
+  "source": "USAspending.gov public API",
+  "source_file_name": "PrimeTransactionsAndSubawards_2026-10-31_H14M25S04198936.zip",
+  "source_file_url": "https://files.usaspending.gov/generated_downloads/PrimeTransactionsAndSubawards_2026-10-31_H14M25S04198936.zip",
+  "source_verification": "official_api_download_count_checked",
+  "status": "complete",
+  "transaction_count_after": 5020,
+  "transaction_count_before": 5020,
+  "zip_sha256": "8b6f2d4c33f125f1407076686726d59c6c25e8c7f2863293429738c1c670c8fa",
+  "raw_filename": "Contracts_PrimeTransactions_2026-10-31_H14M25S29_1.csv",
+  "imported_row_count": 5020,
+  "processed_sha256": "39c440b561fdaba5247db05e6611688ebb4c46b140e45d5faa5ff1f5c7bfb2b2",
+  "parquet_sha256": "abb2ba514a1dde8678e493b167b4a3a44ad0acab2538ea34934a02dff5297425"
+}

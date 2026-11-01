@@ -1,0 +1,32 @@
+name: Official snapshot performance and filter audit
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Benchmark and cross-check verified snapshot
+        run: PYTHONPATH=. python scripts/audit_performance_filters.py
+      - name: Verify dashboard KPIs, filters, SQL and export source
+        run: PYTHONPATH=. python scripts/audit_dashboard_consistency.py
+      - name: Upload reproducible audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: official-performance-filter-audit
+          path: artifacts/performance-filter-audit.json
+          if-no-files-found: warn
+          retention-days: 30
