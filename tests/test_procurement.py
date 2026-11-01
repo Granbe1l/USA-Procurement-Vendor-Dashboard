@@ -591,6 +591,7 @@ def test_sql_choices_readable_tables_and_pareto_scale(source_panel_bundle):
     for name in FILES:
         query.set_value(name).run(timeout=30)
         assert not app.exception
-        assert any(item.language == 'sql' for item in app.code)
+        assert app.dataframe, f'No SQL result table for {name}'
+        assert not any(item.language == 'sql' for item in app.code)
     app.radio[0].set_value('Overview').run(timeout=30)
     assert card_values(app) == before
