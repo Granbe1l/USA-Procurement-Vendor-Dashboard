@@ -1,4 +1,4 @@
-name: Review-branch visual screenshots
+name: Dashboard visual screenshots
 
 on:
   pull_request:
