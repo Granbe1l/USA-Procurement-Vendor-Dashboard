@@ -14,7 +14,7 @@ on:
         default: verify-only
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   official-data:
@@ -76,37 +76,6 @@ jobs:
                   raise AssertionError(f"{page}: {app.exception}")
               print(f"Official snapshot UI smoke test passed: {page}")
           PY
-      - name: Publish first verified snapshot to review branch
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git cat-file -e "HEAD:data/processed/metadata.json" 2>/dev/null; then
-            echo "A reviewed snapshot is already committed; do not silently replace it."
-            exit 0
-          fi
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          meta = json.loads(Path("data/processed/metadata.json").read_text())
-          if meta.get("source_verification") != "official_api_download_count_checked" or meta.get("status") != "complete":
-              raise SystemExit("Refusing to publish an unverified snapshot")
-          PY
-          git config user.name "Candy"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/processed/transactions.parquet data/processed/transactions.csv.gz data/processed/metadata.json data/processed/quality.json data/processed/summary.json data/processed/findings.md
-          git commit -m "Add verified official USAspending snapshot for dashboard review"
-          # Rebase on the current review branch; never force-push or overwrite changes.
-          for attempt in 1 2 3; do
-            git fetch origin "${{ github.event.pull_request.head.ref }}"
-            git rebase FETCH_HEAD
-            if git push origin "HEAD:${{ github.event.pull_request.head.ref }}"; then
-              exit 0
-            fi
-            echo "Concurrent branch update; retrying after fetching latest head."
-          done
-          echo "Unable to publish verified snapshot without overwriting concurrent changes."
-          exit 1
       - name: Upload verified processed dataset
         if: ${{ github.event_name == 'pull_request' || inputs.mode == 'download-and-prepare' }}
         uses: actions/upload-artifact@v4
