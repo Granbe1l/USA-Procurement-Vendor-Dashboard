@@ -19,6 +19,14 @@ Dataset resmi USAspending.gov berisi **5.020 transaksi**, **2.043 award** dan **
 
 HHI lebih tinggi menunjukkan nilai kontrak lebih terkonsentrasi **dalam cakupan analisis ini**. Metrik tersebut tidak mengukur kualitas vendor atau membuktikan risiko pengadaan.
 
+## Makna temuan dan tindak lanjut
+
+**Temuan:** Dalam cakupan NSF dan NRC FY2024–2025, 60 vendor kategori A (8,1% dari vendor teridentifikasi) mencakup 80,2% nilai bersih positif vendor. HHI FY2025 juga berbeda antara NSF dan NRC.
+
+**Tindak lanjut yang disarankan:** Prioritaskan penelaahan konsentrasi pada vendor dengan kontribusi nilai terbesar per instansi dan tahun fiskal. Gunakan tabel vendor dan perbandingan tahunan untuk melihat komposisi nilainya sebelum menentukan apakah pemeriksaan tambahan diperlukan.
+
+**Batas interpretasi:** Ini prioritas analisis berdasarkan konsentrasi nilai, bukan bukti risiko, penyimpangan, atau penilaian kualitas vendor.
+
 ## Tampilan dashboard
 
 ![Ringkasan dashboard](docs/images/overview.png)
