@@ -586,9 +586,11 @@ def test_sql_choices_readable_tables_and_pareto_scale(source_panel_bundle):
             assert 'obligation_cents' not in item.value.columns
             assert 'net_obligation_cents' not in item.value.columns
             assert 'missing_vendor_rows' not in item.value.columns
-    query = next(item for item in app.selectbox if item.label == 'SQL analysis')
     from src.db import FILES
     for name in FILES:
+        # AppTest element handles belong to a specific render. Reacquire the
+        # SQL selectbox after each rerun, when mobile pagination can change.
+        query = next(item for item in app.selectbox if item.label == 'SQL analysis')
         query.set_value(name).run(timeout=30)
         assert not app.exception
         assert app.dataframe, f'No SQL result table for {name}'
