@@ -54,7 +54,21 @@ h1, h2, h3, p, label {font-family: Inter, -apple-system, BlinkMacSystemFont, 'Se
 .finding {border-left: 2px solid #D5A84B; padding: .1rem 0 .1rem .8rem; margin: .5rem 0 1rem; color: #F3F6FC; font-size: .86rem;}
 .finding small {display: block; color: #9BABBE; font-size: .85rem; line-height: 1.6; margin-top: .3rem;}
 .footer {font-size: .67rem; color: #73859C; border-top: 1px solid #293A51; margin-top: 1.5rem; padding-top: 1rem;}
-@media(max-width: 700px) {.block-container {padding: 3.6rem 1rem 2rem;} [data-testid="stMain"] h1 {font-size: 1.65rem;} .kpi-card {min-height: 125px;} .kpi-value {font-size: 1.7rem;}}
+.mobile-data-view {display:none;}
+.mobile-record {border:1px solid #293A51; border-radius:12px; padding:.9rem 1rem; background:#142239; margin:.55rem 0;}
+.mobile-record-title {font-size:.9rem; font-weight:700; color:#F3F6FC; overflow-wrap:anywhere; margin-bottom:.55rem;}
+.mobile-record-field {display:grid; grid-template-columns:minmax(0, 42%) minmax(0, 58%); gap:.6rem; padding:.4rem 0; border-top:1px solid #293A51; font-size:.8rem;}
+.mobile-record-label {color:#AFC0D5; overflow-wrap:anywhere;}
+.mobile-record-value {color:#F3F6FC; text-align:right; overflow-wrap:anywhere; font-variant-numeric:tabular-nums;}
+.mobile-more {border:1px solid #293A51; border-radius:10px; padding:.7rem; margin:.5rem 0; color:#D5A84B;}
+.mobile-record-count {color:#AFC0D5; font-size:.78rem; margin:.5rem 0;}
+@media(max-width: 700px) {
+.block-container {padding: 3.6rem 1rem 2rem;}
+[data-testid="stMain"] h1 {font-size: 1.65rem;}
+.kpi-card {min-height: 125px;} .kpi-value {font-size: 1.7rem;}
+.mobile-data-view {display:block;}
+[class*="st-key-desktop_table_"] {display:none;}
+}
 </style>""", unsafe_allow_html=True)
 
 
@@ -243,10 +257,44 @@ def sql_result(name: str) -> pd.DataFrame:
     return run_sql_file(name, data_path=DATA_PATH, filters=filters)
 
 
+TABLE_SEQUENCE = 0
+
+
 def table(data: pd.DataFrame, columns=None) -> None:
+    """Keep a full desktop table and show readable field/value cards on phones."""
+    global TABLE_SEQUENCE
+    TABLE_SEQUENCE += 1
     shown = display_frame(data, columns)
-    st.dataframe(shown, hide_index=True, width="stretch", column_config={
-        label: st.column_config.TextColumn(label, width="large") for label in shown.columns})
+    with st.container(key=f"desktop_table_{TABLE_SEQUENCE}"):
+        st.dataframe(shown, hide_index=True, width="stretch", column_config={
+            label: st.column_config.TextColumn(label, width="large") for label in shown.columns})
+
+    if shown.empty:
+        st.markdown('<div class="mobile-data-view mobile-record-count">No rows for these filters.</div>',
+                    unsafe_allow_html=True)
+        return
+
+    # Avoid rendering hundreds of cards on a phone; keep the complete table on desktop.
+    preview = shown.head(12)
+    cards = []
+    for _, row in preview.iterrows():
+        # "Scope" repeats in comparison results and is not a useful card heading.
+        heading_col = next((col for col in ("Vendor", "Agency", "Shared normalized name",
+                                            "Recipient UEI", "Fiscal year", "ABC class")
+                            if col in shown.columns and str(row[col]) != "—"), shown.columns[0])
+        heading = html.escape(str(row[heading_col]))
+        fields = "".join(
+            '<div class="mobile-record-field"><span class="mobile-record-label">' +
+            html.escape(str(col)) + '</span><span class="mobile-record-value">' +
+            html.escape(str(value)) + '</span></div>'
+            for col, value in row.items() if col != heading_col
+        )
+        cards.append(f'<article class="mobile-record"><div class="mobile-record-title">{heading}</div>{fields}</article>')
+    more = (f'<div class="mobile-record-count">Showing 12 of {len(shown):,} rows. '
+            'Use a desktop screen to browse the complete table.</div>'
+            if len(shown) > 12 else '')
+    st.markdown('<div class="mobile-data-view">' + "".join(cards) + more + '</div>',
+                unsafe_allow_html=True)
 
 
 def mobile_comparison_cards(data: pd.DataFrame, kind: str) -> None:
