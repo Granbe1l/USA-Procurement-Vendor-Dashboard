@@ -289,12 +289,13 @@ def table(data: pd.DataFrame, columns=None) -> None:
         # Repeated Scope alone conveys little, so do not prioritize it.
         page_size = 5
         page_count = (len(shown) + page_size - 1) // page_size
-        if page_count > 1:
-            page_number = st.selectbox("Page", list(range(1, page_count + 1)),
-                                       key=f"mobile_page_{table_id}",
-                                       format_func=lambda n: f"{n} / {page_count}")
-        else:
-            page_number = 1
+        # Keep the pagination widget mounted even for single-page results.
+        # Otherwise changing SQL queries can remove a keyed widget between
+        # Streamlit test reruns and leave a stale widget state reference.
+        page_number = st.selectbox("Page", list(range(1, page_count + 1)),
+                                   key=f"mobile_page_{table_id}",
+                                   format_func=lambda n: f"{n} / {page_count}",
+                                   disabled=page_count == 1)
         offset = (page_number - 1) * page_size
         visible = shown.iloc[offset:offset + page_size]
         rows = []
