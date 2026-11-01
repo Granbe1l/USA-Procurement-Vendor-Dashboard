@@ -31,6 +31,6 @@ Alternatively, `src.db.run_sql_file(name)` manages setup, dependencies, filterin
 - `06_vendor_rank_changes`: current/previous rank for recipients in either year's top 10, ordered by signed net and UEI. A missing rank means absence.
 - `07`: latest names normalized for whitespace and case, shared by multiple UEIs. This is an approximation, not corporate-parent consolidation.
 
-`05_competition.sql` is intentionally absent: the current cleaned schema has no competition field. Raw official fields have not been inspected because no source snapshot is available. No competition labels are inferred.
+`05_competition.sql` is intentionally absent: the current cleaned schema has no competition field. Tidak ada kolom kompetisi di skema terolah saat ini; klasifikasi kompetisi tidak disimpulkan.
 
 `vendor_concentration.sql` is the preserved earlier SQLite case study. Its results are checked against DuckDB and pandas; it remains an independent compatibility reference.
